@@ -1,0 +1,75 @@
+# ==========================
+# 🐍 PYTHON / BACKEND
+# ==========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment (Wajib Ignore!)
+venv/
+env/
+ENV/
+.venv/
+
+# Environment Variables (PENTING BUAT KEAMANAN!)
+.env
+.flaskenv
+instance/
+config.py
+
+# ==========================
+# 💙 FLUTTER / DART
+# ==========================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Android Specific
+android/gradle/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/.gradle
+android/app/build/
+android/app/release/
+
+# iOS Specific
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/ServiceDefinitions.json
+ios/Runner/khet_generated/
+
+# ==========================
+# 💻 IDE & SYSTEM (VS Code, Mac, Windows)
+# ==========================
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
