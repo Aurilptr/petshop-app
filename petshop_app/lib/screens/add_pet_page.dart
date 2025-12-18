@@ -25,7 +25,7 @@ class _AddPetPageState extends State<AddPetPage> {
   
   bool _isLoading = false;
   // SESUAIKAN IP
-  final String _apiUrl = 'http://192.168.101.12:5000'; 
+  final String _apiUrl = 'http://127.0.0.1:5000'; 
 
   final List<String> _avatars = [
     'assets/images/cat_avatar.jpeg',

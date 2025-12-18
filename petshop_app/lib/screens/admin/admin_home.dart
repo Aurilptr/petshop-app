@@ -20,7 +20,7 @@ class AdminHomePage extends StatefulWidget {
 }
 
 class _AdminHomePageState extends State<AdminHomePage> {
-  final String _apiUrl = 'http://192.168.101.12:5000'; // IP KAMU
+  final String _apiUrl = 'http://127.0.0.1:5000'; // IP KAMU
   
   Map<String, dynamic> _stats = {
     'revenue': 0, 'total_orders': 0, 'total_bookings': 0, 'total_users': 0

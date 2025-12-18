@@ -40,7 +40,7 @@ class _BookingFormPageState extends State<BookingFormPage> {
   final List<String> _bankList = ['BCA', 'Mandiri', 'BRI', 'BNI', 'BSI'];
 
   bool _isSubmitting = false;
-  final String _apiUrl = 'http://192.168.101.12:5000'; // IP KAMU
+  final String _apiUrl = 'hhttp://127.0.0.1:5000'; // IP KAMU
 
   // Format Rupiah
   final formatRupiah = NumberFormat.currency(

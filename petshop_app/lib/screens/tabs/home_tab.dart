@@ -19,7 +19,7 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
-  final String _apiUrl = 'http://192.168.101.12:5000'; 
+  final String _apiUrl = 'http://127.0.0.1:5000'; 
   bool _isLoading = true;
   
   List<dynamic> _productRecommendations = [];

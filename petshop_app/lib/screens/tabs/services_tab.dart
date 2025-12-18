@@ -16,7 +16,7 @@ class ServicesTab extends StatefulWidget {
 }
 
 class _ServicesTabState extends State<ServicesTab> {
-  final String _apiUrl = 'http://192.168.101.12:5000'; // IP KAMU
+  final String _apiUrl = 'http://127.0.0.1:5000'; // IP KAMU
   bool _isLoading = true;
   List<dynamic> _services = [];
 

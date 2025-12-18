@@ -14,7 +14,7 @@ class OrdersTab extends StatefulWidget {
 
 class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMixin {
   // --- PENTING: Sesuaikan IP Address ini dengan Backend kamu ---
-  final String _apiUrl = 'http://192.168.101.12:5000'; 
+  final String _apiUrl = 'http://127.0.0.1:5000'; 
   
   late TabController _tabController;
   bool _isLoading = true;

@@ -16,7 +16,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   // IP KAMU (Pastikan sama dengan API)
-  final String _apiUrl = 'http://192.168.101.12:5000';
+  final String _apiUrl = 'http://127.0.0.1:5000';
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();

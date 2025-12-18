@@ -23,7 +23,7 @@ class _ItemFormPageState extends State<ItemFormPage> {
   String _selectedTipe = 'produk';
   String _gambarUrl = 'assets/images/whiskas.jpeg'; 
   bool _isLoading = false;
-  final String _apiUrl = 'http://192.168.101.12:5000'; 
+  final String _apiUrl = 'http://127.0.0.1:5000'; 
 
   final List<String> _assetImages = [
     'assets/images/whiskas.jpeg', 'assets/images/royal_canin.jpeg',

@@ -16,7 +16,7 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-  final String _apiUrl = 'http://192.168.101.12:5000'; // IP KAMU
+  final String _apiUrl = 'http://127.0.0.1:5000'; // IP KAMU
   bool _isLoading = false;
   final Set<int> _selectedItemIds = {}; 
   final formatRupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);

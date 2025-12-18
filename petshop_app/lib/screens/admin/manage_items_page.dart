@@ -14,7 +14,7 @@ class ManageItemsPage extends StatefulWidget {
 }
 
 class _ManageItemsPageState extends State<ManageItemsPage> {
-  final String _apiUrl = 'http://192.168.101.12:5000';
+  final String _apiUrl = 'http://127.0.0.1:5000';
   bool _isLoading = true;
   List<dynamic> _items = [];
   final formatRupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
