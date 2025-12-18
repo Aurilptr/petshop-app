@@ -81,15 +81,20 @@ class _HomeTabState extends State<HomeTab> {
     if(mounted) setState(() { _petFact = "Mengambil fakta..."; });
     try {
       bool isDog = Random().nextBool(); 
+      
       final url = isDog ? 'https://dog-api.kinduff.com/api/facts' : 'https://catfact.ninja/fact';
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
+        print(response.statusCode.toString());
         final data = json.decode(response.body);
         if(mounted) setState(() { _petFact = isDog ? data['facts'][0] : data['fact']; });
       }
     } catch (e) {
       if(mounted) setState(() { _petFact = "Gagal memuat fakta unik."; });
+      print('error: $e');
     }
+
+    print(_petFact);
   }
 
   ImageProvider _getImage(String? url) {
