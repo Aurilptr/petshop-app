@@ -1,6 +1,6 @@
 # File: app/api/item_routes.py
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from app.models import Item, db
 
 bp = Blueprint('item_api', __name__, url_prefix='/api/items')
@@ -38,9 +38,11 @@ def add_item():
         )
         db.session.add(new_item)
         db.session.commit()
+        current_app.logger.info(f"📦 ADMIN TAMBAH ITEM: {new_item.nama} (Stok: {new_item.stok})")
         return jsonify({'message': 'Item berhasil ditambahkan!'}), 201
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f"❌ Error Tambah Item: {e}")
         return jsonify({'message': 'Gagal tambah item', 'error': str(e)}), 500
 
 # 3. EDIT ITEM (Khusus Admin)

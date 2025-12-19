@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify,current_app
 from app import db
 from app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -31,6 +31,7 @@ def register():
     try:
         db.session.add(new_user)
         db.session.commit()
+        current_app.logger.info(f"👤 USER BARU DAFTAR: {data['nama_lengkap']} ({data['email']})")
         return jsonify({'message': 'Registrasi berhasil'}), 201
     except Exception as e:
         db.session.rollback()

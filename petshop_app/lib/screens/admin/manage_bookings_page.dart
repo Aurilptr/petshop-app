@@ -46,13 +46,34 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> with SingleTick
     }
   }
 
+  // File: lib/screens/admin/manage_bookings_page.dart
+
   List<dynamic> _getBookingsByStatus(String tabName) {
     switch (tabName) {
-      case 'Perlu Konfirmasi': return _allBookings.where((b) => b['status'] == 'pending').toList();
-      case 'Jadwal Aktif': return _allBookings.where((b) => b['status'] == 'confirmed').toList();
-      case 'Selesai': return _allBookings.where((b) => b['status'] == 'finished').toList();
-      case 'Dibatalkan': return _allBookings.where((b) => b['status'] == 'batal').toList();
-      default: return [];
+      case 'Perlu Konfirmasi':
+        return _allBookings.where((b) => 
+            b['status'] == 'pending' || 
+            b['status'] == 'menunggu_pembayaran' || 
+            b['status'] == 'diproses'
+        ).toList();
+        
+      case 'Jadwal Aktif':
+        return _allBookings.where((b) => 
+            b['status'] == 'confirmed' || 
+            b['status'] == 'diterima'
+        ).toList();
+        
+      case 'Selesai':
+        return _allBookings.where((b) => 
+            b['status'] == 'finished' || 
+            b['status'] == 'selesai'
+        ).toList();
+        
+      case 'Dibatalkan':
+        return _allBookings.where((b) => b['status'] == 'batal').toList();
+        
+      default:
+        return [];
     }
   }
 

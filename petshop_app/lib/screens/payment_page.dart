@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; 
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 
 class PaymentPage extends StatefulWidget {
   final int orderId;
@@ -46,6 +46,7 @@ class _PaymentPageState extends State<PaymentPage> {
       final response = await http.put(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
+        body: json.encode({}),
       );
 
       if (response.statusCode == 200) {
