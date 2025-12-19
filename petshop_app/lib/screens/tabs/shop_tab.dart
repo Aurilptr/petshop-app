@@ -14,10 +14,20 @@ class ShopTab extends StatefulWidget {
 }
 
 class _ShopTabState extends State<ShopTab> {
-  final String _apiUrl = 'http://127.0.0.1:5000'; // IP KAMU
+  final String _apiUrl = 'http://127.0.0.1:5000'; 
   bool _isLoading = true;
   List<dynamic> _products = [];
   final formatRupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+  // --- PALET WARNA ELEGANT MIDNIGHT ---
+  final Color _bgDark = const Color(0xFF0F2027); // Background Utama
+  final Color _bgLight = const Color(0xFF203A43); // Warna Card
+  final Color _accentColor = const Color(0xFF4CA1AF); // Teal/Cyan Neon
+  final Color _textWhite = Colors.white;
+  final Color _textGrey = Colors.white70;
+
+  // --- FONT CUSTOM ---
+  final String _fontFamily = 'Helvetica';
 
   @override
   void initState() {
@@ -26,8 +36,11 @@ class _ShopTabState extends State<ShopTab> {
   }
 
   Future<void> _fetchProducts() async {
+    print("[ShopTab] Fetching product list...");
     try {
       final response = await http.get(Uri.parse('$_apiUrl/api/items'));
+      print("[ShopTab] API Status: ${response.statusCode}");
+      
       if (response.statusCode == 200) {
         List<dynamic> allItems = json.decode(response.body);
         if (mounted) {
@@ -36,9 +49,11 @@ class _ShopTabState extends State<ShopTab> {
             _products = allItems.where((item) => item['tipe'] == 'produk').toList();
             _isLoading = false;
           });
+          print("[ShopTab] Loaded ${_products.length} products.");
         }
       }
     } catch (e) {
+      print("[ShopTab] Error fetching products: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -54,15 +69,17 @@ class _ShopTabState extends State<ShopTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: _bgDark, // Background Gelap
       body: _isLoading 
-        ? const Center(child: CircularProgressIndicator()) 
+        ? Center(child: CircularProgressIndicator(color: _accentColor)) 
         : _products.isEmpty 
-            ? const Center(child: Text("Belum ada produk."))
+            ? Center(child: Text("Belum ada produk.", style: TextStyle(fontFamily: _fontFamily, color: _textGrey)))
             : RefreshIndicator(
                 onRefresh: _fetchProducts,
+                color: _accentColor,
+                backgroundColor: _bgLight,
                 child: GridView.builder(
-                  padding: const EdgeInsets.all(15),
+                  padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     childAspectRatio: 0.75, // Proporsi kartu
@@ -82,10 +99,16 @@ class _ShopTabState extends State<ShopTab> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _bgLight, // Card Gelap
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 5))],
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
+        ],
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,6 +127,7 @@ class _ShopTabState extends State<ShopTab> {
                       image: _getImage(item['gambar_url']),
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, stack) => Icon(Icons.broken_image, color: _textGrey),
                     ),
                   ),
                 ),
@@ -111,8 +135,8 @@ class _ShopTabState extends State<ShopTab> {
                   Center(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(5)),
-                      child: const Text("HABIS", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.8), borderRadius: BorderRadius.circular(5)),
+                      child: Text("HABIS", style: TextStyle(fontFamily: _fontFamily, color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
               ],
@@ -125,16 +149,24 @@ class _ShopTabState extends State<ShopTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item['nama'], maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isHabis ? Colors.grey : Colors.black)),
+                Text(
+                  item['nama'],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold, fontSize: 14, color: isHabis ? Colors.grey : _textWhite),
+                ),
                 const SizedBox(height: 5),
                 
                 // --- HARGA & STOK SEJAJAR ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(formatRupiah.format(item['harga']), style: TextStyle(color: isHabis ? Colors.grey : Colors.pink[600], fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(
+                      formatRupiah.format(item['harga']),
+                      style: TextStyle(fontFamily: _fontFamily, color: isHabis ? Colors.grey : _accentColor, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
                     if (!isHabis) 
-                      Text("Stok: $stok", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                      Text("Stok: $stok", style: TextStyle(fontFamily: _fontFamily, fontSize: 10, color: _textGrey)),
                   ],
                 ),
                 // -----------------------------
@@ -145,6 +177,8 @@ class _ShopTabState extends State<ShopTab> {
                   height: 30,
                   child: ElevatedButton(
                     onPressed: isHabis ? null : () {
+                      print("[ShopTab] Add to Cart Clicked: ${item['nama']}");
+                      
                       // CEK CART SERVICE DULU
                       int currentQty = 0;
                       try {
@@ -152,19 +186,22 @@ class _ShopTabState extends State<ShopTab> {
                       } catch (e) { currentQty = 0; }
 
                       if (currentQty >= stok) {
+                        print("[ShopTab] Stock insufficient for ${item['nama']}");
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Stok tidak cukup!'), backgroundColor: Colors.red));
                       } else {
+                        print("[ShopTab] Item added to cart");
                         CartService.addItem(item);
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${item['nama']} masuk keranjang!'), duration: const Duration(seconds: 1), backgroundColor: Colors.green));
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isHabis ? Colors.grey : Colors.pink, 
-                      foregroundColor: Colors.white,
+                      backgroundColor: isHabis ? Colors.white.withOpacity(0.1) : _accentColor, 
+                      foregroundColor: isHabis ? Colors.white.withOpacity(0.3) : Colors.white, 
                       padding: EdgeInsets.zero,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                    child: Text(isHabis ? "Sold Out" : "Add +", style: const TextStyle(fontSize: 12)),
+                    child: Text(isHabis ? "Sold Out" : "Add +", style: TextStyle(fontFamily: _fontFamily, fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                 )
               ],

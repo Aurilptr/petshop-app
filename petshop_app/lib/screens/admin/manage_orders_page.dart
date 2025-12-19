@@ -13,7 +13,7 @@ class ManageOrdersPage extends StatefulWidget {
 }
 
 class _ManageOrdersPageState extends State<ManageOrdersPage> with SingleTickerProviderStateMixin {
-  final String _apiUrl = 'http://127.0.0.1:5000'; // IP KAMU
+  final String _apiUrl = 'http://127.0.0.1:5000'; 
   bool _isLoading = true;
   List<dynamic> _allOrders = [];
   
@@ -21,25 +21,44 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> with SingleTickerPr
   final List<String> _tabs = ['Perlu Cek', 'Perlu Kemas', 'Dikirim', 'Selesai', 'Dibatalkan'];
   final formatRupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
+  // --- PALET WARNA ELEGANT MIDNIGHT ---
+  final Color _bgDark = const Color(0xFF0F2027); // Background Utama
+  final Color _bgLight = const Color(0xFF203A43); // Warna Card
+  final Color _accentColor = const Color(0xFF4CA1AF); // Teal/Cyan Neon
+  final Color _textWhite = Colors.white;
+  final Color _textGrey = Colors.white70;
+
+  // --- FONT CUSTOM ---
+  final String _fontFamily = 'Helvetica';
+
   @override
   void initState() {
     super.initState();
+    print("[ManageOrders] InitState Called.");
     _tabController = TabController(length: _tabs.length, vsync: this);
     _fetchOrders();
   }
 
   Future<void> _fetchOrders() async {
+    print("[ManageOrders] Fetching order list...");
     try {
       final response = await http.get(Uri.parse('$_apiUrl/api/admin/orders'));
+      print("[ManageOrders] API Status: ${response.statusCode}");
+      
       if (response.statusCode == 200) {
         if (mounted) {
           setState(() {
             _allOrders = json.decode(response.body);
             _isLoading = false;
           });
+          print("[ManageOrders] Loaded ${_allOrders.length} orders.");
         }
+      } else {
+        print("[ManageOrders] Failed to load orders.");
+        if (mounted) setState(() => _isLoading = false);
       }
     } catch (e) {
+      print("[ManageOrders] Error fetching orders: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -56,39 +75,53 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> with SingleTickerPr
   }
 
   Future<void> _updateStatus(int id, String status, {String? reason}) async {
+    print("[ManageOrders] Updating status ID: $id -> $status (Reason: $reason)");
     try {
-      await http.put(
+      final response = await http.put(
         Uri.parse('$_apiUrl/api/admin/orders/$id/status'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'status': status, 'reason': reason}),
       );
-      _fetchOrders(); 
-      if(!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Status berhasil diupdate!"), backgroundColor: Colors.green));
+
+      print("[ManageOrders] Update Response: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        _fetchOrders(); 
+        if(!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Status berhasil diupdate!"), backgroundColor: Colors.green));
+      } else {
+        throw Exception("Failed to update");
+      }
     } catch (e) {
+      print("[ManageOrders] Error update status: $e");
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Gagal update status"), backgroundColor: Colors.red));
     }
   }
 
   void _showRejectDialog(int orderId) {
+    print("[ManageOrders] Show Reject Dialog for Order ID: $orderId");
     String? selectedReason;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Tolak Pesanan"),
+        backgroundColor: _bgLight,
+        title: Text("Tolak Pesanan", style: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold, color: _textWhite)),
         content: StatefulBuilder(
           builder: (context, setState) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Pilih alasan penolakan:"),
-              RadioListTile(title: const Text("Stok Habis"), value: "Stok Habis", groupValue: selectedReason, onChanged: (v) => setState(() => selectedReason = v)),
-              RadioListTile(title: const Text("Pembayaran Tidak Valid"), value: "Pembayaran Tidak Valid", groupValue: selectedReason, onChanged: (v) => setState(() => selectedReason = v)),
-              RadioListTile(title: const Text("Alamat Tidak Terjangkau"), value: "Alamat Tidak Terjangkau", groupValue: selectedReason, onChanged: (v) => setState(() => selectedReason = v)),
+              Text("Pilih alasan penolakan:", style: TextStyle(fontFamily: _fontFamily, color: _textGrey)),
+              _buildRadioOption("Stok Habis", selectedReason, (v) => setState(() => selectedReason = v)),
+              _buildRadioOption("Pembayaran Tidak Valid", selectedReason, (v) => setState(() => selectedReason = v)),
+              _buildRadioOption("Alamat Tidak Terjangkau", selectedReason, (v) => setState(() => selectedReason = v)),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx), 
+            child: Text("Batal", style: TextStyle(fontFamily: _fontFamily, color: _textGrey))
+          ),
           ElevatedButton(
             onPressed: () {
               if (selectedReason != null) {
@@ -96,11 +129,21 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> with SingleTickerPr
                 Navigator.pop(ctx);
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-            child: const Text("Tolak"),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+            child: Text("Tolak", style: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold)),
           )
         ],
       ),
+    );
+  }
+
+  Widget _buildRadioOption(String value, String? groupValue, Function(String?) onChanged) {
+    return RadioListTile<String>(
+      title: Text(value, style: TextStyle(fontFamily: _fontFamily, color: _textWhite)),
+      value: value,
+      groupValue: groupValue,
+      activeColor: _accentColor,
+      onChanged: onChanged,
     );
   }
 
@@ -115,28 +158,41 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.pink[50],
+      backgroundColor: _bgDark, // Background Gelap
       appBar: AppBar(
-        title: const Text("Kelola Pesanan"), 
-        backgroundColor: Colors.pink, 
+        title: Text("Kelola Pesanan", style: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: _bgDark,
         foregroundColor: Colors.white,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          indicatorColor: _accentColor,
+          labelColor: _accentColor,
+          labelStyle: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold),
+          unselectedLabelColor: _textGrey,
+          unselectedLabelStyle: TextStyle(fontFamily: _fontFamily),
           tabs: _tabs.map((t) => Tab(text: t)).toList(),
         ),
       ),
       body: _isLoading 
-        ? const Center(child: CircularProgressIndicator(color: Colors.pink))
+        ? Center(child: CircularProgressIndicator(color: _accentColor))
         : TabBarView(
             controller: _tabController,
             children: _tabs.map((tabName) {
               final orders = _getOrdersByStatus(tabName);
-              if (orders.isEmpty) return Center(child: Text("Tidak ada pesanan di tab $tabName"));
+              if (orders.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.shopping_bag_outlined, size: 60, color: Colors.white.withOpacity(0.1)),
+                      const SizedBox(height: 10),
+                      Text("Tidak ada pesanan di tab $tabName", style: TextStyle(fontFamily: _fontFamily, color: _textGrey)),
+                    ],
+                  )
+                );
+              }
               
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
@@ -152,9 +208,13 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> with SingleTickerPr
     String? cancelReason = order['cancel_reason'];
 
     return Card(
+      color: _bgLight, // Card Gelap
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+        side: BorderSide(color: Colors.white.withOpacity(0.05))
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -180,31 +240,31 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> with SingleTickerPr
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("Order #${order['id']}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          Text(order['date'], style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                          Text("Order #${order['id']}", style: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold, fontSize: 14, color: _textWhite)),
+                          Text(order['date'], style: TextStyle(fontFamily: _fontFamily, fontSize: 10, color: _textGrey)),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(order['customer'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text(order['items'], maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                      Text(order['customer'], style: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold, fontSize: 16, color: _textWhite)),
+                      Text(order['items'], maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: _fontFamily, color: _textGrey, fontSize: 12)),
                       const SizedBox(height: 4),
-                      Text(formatRupiah.format(order['total']), style: const TextStyle(color: Colors.pink, fontWeight: FontWeight.bold)),
+                      Text(formatRupiah.format(order['total']), style: TextStyle(fontFamily: _fontFamily, color: _accentColor, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
               ],
             ),
             
-            // Info Pembayaran (Hanya di tab perlu cek)
+            // Info Pembayaran
             if (tabName == 'Perlu Cek') ...[
               const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.orange[50], borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                 child: Row(children: [
-                  const Icon(Icons.payment, size: 16, color: Colors.orange),
+                  const Icon(Icons.payment, size: 16, color: Colors.orangeAccent),
                   const SizedBox(width: 5),
-                  Text("${order['bank'] ?? '-'} (VA: ${order['va'] ?? '-'})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  Text("${order['bank'] ?? '-'} (VA: ${order['va'] ?? '-'})", style: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orangeAccent)),
                 ]),
               )
             ],
@@ -215,13 +275,13 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> with SingleTickerPr
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade200)),
-                child: Text("Alasan: $cancelReason", style: const TextStyle(color: Colors.red, fontSize: 12)),
+                decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.withOpacity(0.3))),
+                child: Text("Alasan: $cancelReason", style: TextStyle(fontFamily: _fontFamily, color: Colors.redAccent, fontSize: 12)),
               )
             ],
 
             const SizedBox(height: 12),
-            const Divider(height: 1),
+            Divider(color: Colors.white.withOpacity(0.1), height: 1),
             const SizedBox(height: 8),
             
             // --- TOMBOL AKSI ---
@@ -229,17 +289,33 @@ class _ManageOrdersPageState extends State<ManageOrdersPage> with SingleTickerPr
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 if (tabName == 'Perlu Cek' && order['status'] == 'pending')
-                  ElevatedButton(onPressed: () => _updateStatus(order['id'], 'diproses'), style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))), child: const Text("Terima Bayar")),
+                  ElevatedButton(
+                    onPressed: () => _updateStatus(order['id'], 'diproses'), 
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))), 
+                    child: Text("Terima Bayar", style: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold))
+                  ),
                 
                 if (tabName == 'Perlu Kemas')
-                  ElevatedButton(onPressed: () => _updateStatus(order['id'], 'dikirim'), style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))), child: const Text("Kirim Barang")),
+                  ElevatedButton(
+                    onPressed: () => _updateStatus(order['id'], 'dikirim'), 
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.purpleAccent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))), 
+                    child: Text("Kirim Barang", style: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold))
+                  ),
 
                 if (tabName == 'Dikirim')
-                  ElevatedButton(onPressed: () => _updateStatus(order['id'], 'selesai'), style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))), child: const Text("Selesai")),
+                  ElevatedButton(
+                    onPressed: () => _updateStatus(order['id'], 'selesai'), 
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))), 
+                    child: Text("Selesai", style: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold))
+                  ),
 
                 const SizedBox(width: 10),
                 if (tabName == 'Perlu Cek' || tabName == 'Perlu Kemas')
-                  OutlinedButton(onPressed: () => _showRejectDialog(order['id']), style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))), child: const Text("Tolak")),
+                  OutlinedButton(
+                    onPressed: () => _showRejectDialog(order['id']), 
+                    style: OutlinedButton.styleFrom(foregroundColor: Colors.redAccent, side: const BorderSide(color: Colors.redAccent), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))), 
+                    child: Text("Tolak", style: TextStyle(fontFamily: _fontFamily))
+                  ),
               ],
             )
           ],

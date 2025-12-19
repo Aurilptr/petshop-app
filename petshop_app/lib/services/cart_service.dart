@@ -1,55 +1,68 @@
 // File: lib/services/cart_service.dart
 
-import 'package:shared_preferences/shared_preferences.dart'; // Import Library Baru
-import 'dart:convert'; // Import untuk ubah List ke Teks JSON
+import 'package:shared_preferences/shared_preferences.dart'; 
+import 'dart:convert'; 
 
 class CartService {
   static List<Map<String, dynamic>> _items = [];
 
   // --- FUNGSI LOAD (DIPANGGIL SAAT APLIKASI NYALA) ---
   static Future<void> loadCart() async {
-    final prefs = await SharedPreferences.getInstance();
-    // Ambil data teks dari memori HP
-    String? cartString = prefs.getString('my_cart');
-    
-    if (cartString != null) {
-      // Ubah Teks JSON kembali menjadi List
-      List<dynamic> decodedList = json.decode(cartString);
-      _items = decodedList.map((item) => Map<String, dynamic>.from(item)).toList();
-      print('Berhasil memuat ${_items.length} barang dari memori HP.');
+    print("[CartService] Loading cart from local storage...");
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? cartString = prefs.getString('my_cart');
+      
+      if (cartString != null) {
+        List<dynamic> decodedList = json.decode(cartString);
+        _items = decodedList.map((item) => Map<String, dynamic>.from(item)).toList();
+        print('[CartService] Success! Loaded ${_items.length} items.');
+      } else {
+        print('[CartService] No saved cart found (New Session).');
+      }
+    } catch (e) {
+      print('[CartService] Error loading cart: $e');
     }
   }
 
   // --- FUNGSI SAVE (DIPANGGIL SETIAP ADA PERUBAHAN) ---
   static Future<void> _saveCart() async {
-    final prefs = await SharedPreferences.getInstance();
-    // Ubah List menjadi Teks JSON biar bisa disimpan
-    String cartString = json.encode(_items);
-    await prefs.setString('my_cart', cartString);
-    print('Keranjang disimpan ke memori HP.');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String cartString = json.encode(_items);
+      await prefs.setString('my_cart', cartString);
+      print('[CartService] Cart saved to local storage. Total items: ${_items.length}');
+    } catch (e) {
+      print('[CartService] Error saving cart: $e');
+    }
   }
 
   static void addItem(Map<String, dynamic> item) {
+    print("[CartService] Adding item: ${item['nama']}");
     int index = _items.indexWhere((i) => i['id'] == item['id']);
     
     if (index != -1) {
       _items[index]['qty'] = (_items[index]['qty'] ?? 1) + 1;
+      print("[CartService] Item exists. Quantity increased to ${_items[index]['qty']}");
     } else {
       Map<String, dynamic> newItem = Map.from(item);
       newItem['qty'] = 1;
       _items.add(newItem);
+      print("[CartService] New item added.");
     }
-    _saveCart(); // <--- SIMPAN OTOMATIS
+    _saveCart(); 
   }
 
   static void removeItem(int id) {
+    print("[CartService] Removing item ID: $id");
     _items.removeWhere((item) => item['id'] == id);
-    _saveCart(); // <--- SIMPAN OTOMATIS
+    _saveCart(); 
   }
 
   static void removeSpecificItems(List<int> idsToRemove) {
+    print("[CartService] Removing processed items: $idsToRemove");
     _items.removeWhere((item) => idsToRemove.contains(item['id']));
-    _saveCart(); // <--- SIMPAN OTOMATIS
+    _saveCart(); 
   }
   
   static void decreaseQty(int id) {
@@ -57,10 +70,12 @@ class CartService {
     if (index != -1) {
       if (_items[index]['qty'] > 1) {
         _items[index]['qty'] -= 1;
+        print("[CartService] Qty decreased for ID $id. New Qty: ${_items[index]['qty']}");
       } else {
         _items.removeAt(index);
+        print("[CartService] Item ID $id removed because Qty became 0.");
       }
-      _saveCart(); // <--- SIMPAN OTOMATIS
+      _saveCart(); 
     }
   }
 
@@ -77,7 +92,8 @@ class CartService {
   }
 
   static void clear() {
+    print("[CartService] Clearing entire cart...");
     _items.clear();
-    _saveCart(); // <--- SIMPAN OTOMATIS (Jadi kosong juga di memori)
+    _saveCart(); 
   }
 }

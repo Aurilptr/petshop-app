@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
-import '../booking_form_page.dart'; // Pastikan file ini ada
+import '../booking_form_page.dart'; 
 
 class ServicesTab extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -24,25 +24,46 @@ class _ServicesTabState extends State<ServicesTab> {
     locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0,
   );
 
+  // --- PALET WARNA ELEGANT MIDNIGHT ---
+  final Color _bgDark = const Color(0xFF0F2027); // Background Utama
+  final Color _bgLight = const Color(0xFF203A43); // Warna Card
+  final Color _accentColor = const Color(0xFF4CA1AF); // Teal/Cyan Neon
+  final Color _textWhite = Colors.white;
+  final Color _textGrey = Colors.white70;
+
+  // --- FONT CUSTOM ---
+  final String _fontFamily = 'Helvetica';
+
   @override
   void initState() {
     super.initState();
+    print("[ServicesTab] InitState Called. User: ${widget.userData['nama_lengkap']}");
     _fetchServices();
   }
 
   Future<void> _fetchServices() async {
+    print("[ServicesTab] Fetching services list...");
     try {
       final response = await http.get(Uri.parse('$_apiUrl/api/items'));
+      print("[ServicesTab] API Status: ${response.statusCode}");
+      
       if (response.statusCode == 200) {
         List<dynamic> allItems = json.decode(response.body);
-        setState(() {
-          // Ambil hanya yang tipenya 'layanan'
-          _services = allItems.where((item) => item['tipe'] == 'layanan').toList();
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            // Ambil hanya yang tipenya 'layanan'
+            _services = allItems.where((item) => item['tipe'] == 'layanan').toList();
+            _isLoading = false;
+          });
+          print("[ServicesTab] Loaded ${_services.length} services.");
+        }
+      } else {
+        if (mounted) setState(() => _isLoading = false);
+        print("[ServicesTab] Failed to load services.");
       }
     } catch (e) {
-      setState(() => _isLoading = false);
+      print("[ServicesTab] Error fetching services: $e");
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -57,35 +78,36 @@ class _ServicesTabState extends State<ServicesTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      // TAMPILAN GRID 2 KOLOM (KAYA MARKETPLACE)
+      backgroundColor: _bgDark, // Background Gelap
+      
+      // TAMPILAN GRID 2 KOLOM
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: _accentColor))
           : _services.isEmpty
-              ? const Center(child: Text("Belum ada layanan."))
+              ? Center(child: Text("Belum ada layanan.", style: TextStyle(fontFamily: _fontFamily, color: _textGrey)))
               : GridView.builder(
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, // 2 Kolom
+                    crossAxisCount: 2, 
                     crossAxisSpacing: 15,
                     mainAxisSpacing: 15,
-                    childAspectRatio: 0.75, // Perbandingan lebar:tinggi
+                    childAspectRatio: 0.75, 
                   ),
                   itemCount: _services.length,
                   itemBuilder: (context, index) {
                     final service = _services[index];
                     return Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: _bgLight, // Card Gelap
                         borderRadius: BorderRadius.circular(15),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            blurRadius: 5,
-                            offset: const Offset(0, 5),
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
                           )
                         ],
-                        border: Border.all(color: Colors.pink.withOpacity(0.1)),
+                        border: Border.all(color: Colors.white.withOpacity(0.05)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -94,12 +116,17 @@ class _ServicesTabState extends State<ServicesTab> {
                           Expanded(
                             child: ClipRRect(
                               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                              child: Image(
-                                image: _getImage(service['gambar_url']),
-                                fit: BoxFit.cover,
+                              child: ColorFiltered(
+                                colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.multiply), 
+                                child: Image(
+                                  image: _getImage(service['gambar_url']),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (ctx, err, stack) => Icon(Icons.broken_image, color: _textGrey),
+                                ),
                               ),
                             ),
                           ),
+                          
                           // TEXT DI BAWAH
                           Padding(
                             padding: const EdgeInsets.all(10.0),
@@ -110,21 +137,22 @@ class _ServicesTabState extends State<ServicesTab> {
                                   service['nama'],
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.bold, fontSize: 16, color: _textWhite),
                                 ),
                                 const SizedBox(height: 5),
                                 Text(
                                   formatRupiah.format(service['harga']),
-                                  style: TextStyle(color: Colors.pink[600], fontWeight: FontWeight.bold),
+                                  style: TextStyle(fontFamily: _fontFamily, color: _accentColor, fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 10),
+                                
                                 // TOMBOL BOOKING
                                 SizedBox(
                                   width: double.infinity,
                                   height: 35,
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      // KE HALAMAN FORMULIR
+                                      print("[ServicesTab] Booking Clicked: ${service['nama']}");
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
@@ -136,12 +164,13 @@ class _ServicesTabState extends State<ServicesTab> {
                                       );
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.pink,
+                                      backgroundColor: _accentColor, // Tombol Teal
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                       padding: EdgeInsets.zero,
+                                      elevation: 0,
                                     ),
-                                    child: const Text("Booking Sekarang", style: TextStyle(fontSize: 12)),
+                                    child: Text("Booking Sekarang", style: TextStyle(fontFamily: _fontFamily, fontSize: 12, fontWeight: FontWeight.bold)),
                                   ),
                                 )
                               ],
