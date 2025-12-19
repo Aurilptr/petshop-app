@@ -1,6 +1,6 @@
 # File: app/api/pet_routes.py
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from app.models import Pet
 from app import db
 
@@ -31,14 +31,14 @@ def add_pet():
         db.session.commit()
         
         # Print di terminal biar tahu berhasil
-        print(f"Sukses tambah hewan: {new_pet.nama_hewan}")
+        current_app.logger.info(f"🐾 TAMBAH HEWAN: {new_pet.nama_hewan} (Punya User ID: {new_pet.user_id})")
         
         return jsonify({'message': 'Hewan berhasil ditambahkan!', 'id': new_pet.id}), 201
     
     except Exception as e:
         db.session.rollback()
         # Print error ke terminal (PENTING BUAT DEBUG)
-        print(f"Gagal tambah hewan: {e}") 
+        current_app.logger.error(f"❌ Gagal tambah hewan: {e}") # Log Error 
         return jsonify({'message': 'Gagal tambah hewan', 'error': str(e)}), 500
 
 # ----------------------------------------------------------------------

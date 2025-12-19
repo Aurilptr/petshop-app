@@ -1,6 +1,6 @@
 # File: app/api/admin_routes.py
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from app.models import Order, Booking, User, Item, db
 from sqlalchemy import func
 
@@ -13,7 +13,7 @@ bp = Blueprint('admin_api', __name__, url_prefix='/api/admin')
 def get_stats():
     # 1. Hitung Total Uang dari ORDERS (Jual Beli Barang)
     order_revenue = db.session.query(func.sum(Order.total_harga)).scalar() or 0
-
+ 
     # 2. Hitung Total Uang dari BOOKINGS (Jasa Grooming/Hotel)
     booking_revenue = db.session.query(func.sum(Booking.total_harga)).scalar() or 0
 
@@ -26,6 +26,8 @@ def get_stats():
     
     # Menghitung user client saja (selain admin)
     total_users = User.query.filter(User.role != 'admin').count()
+
+    current_app.logger.info(f"📊 ADMIN MEMBUKA DASHBOARD (Total Omzet: Rp {total_revenue})")
 
     return jsonify({
         'revenue': int(total_revenue),      # Pastikan jadi integer

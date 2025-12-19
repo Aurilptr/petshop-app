@@ -1,4 +1,6 @@
-from flask import Blueprint, request, jsonify
+# File: app/api/order_routes.py
+
+from flask import Blueprint, request, jsonify, current_app
 from app import db
 from app.models import Order, OrderDetail, Item, Cart
 from datetime import datetime
@@ -11,25 +13,20 @@ bp = Blueprint('order_api', __name__, url_prefix='/api/orders')
 def create_order():
     data = request.get_json()
     
-    # --- REVISI: MENYESUAIKAN DENGAN FLUTTER ---
     user_id = data.get('user_id')
-    
-    # Flutter kirim 'items_list', tapi kita jaga-jaga terima 'items' juga
     items_data = data.get('items_list') or data.get('items') 
-    
-    # Flutter kirim 'bank', kita jaga-jaga terima 'bank_name'
     bank_name = data.get('bank') or data.get('bank_name', 'BCA') 
-    
-    # Ambil payment_method (Default 'transfer')
     payment_method = data.get('payment_method', 'transfer') 
 
+    # [LOG TAMBAHAN] Biar tahu kapan proses dimulai
+    current_app.logger.info(f"🛒 START CHECKOUT | User ID: {user_id}")
+
     if not user_id or not items_data:
-        print("Data Error: User ID atau Items kosong") # Debug di terminal
+        current_app.logger.warning("⚠️ Data Error: User ID atau Items kosong") 
         return jsonify({'message': 'Data tidak lengkap (user_id / items_list)'}), 400
 
     try:
         total_harga_order = 0
-        order_details_list = []
 
         # 1. Cek Stok & Hitung Total Dulu (Validasi)
         for item_info in items_data:
@@ -39,13 +36,13 @@ def create_order():
                 return jsonify({'message': f"Item ID {item_info['item_id']} tidak ditemukan"}), 404
             
             if item_db.stok < item_info['jumlah']:
+                current_app.logger.warning(f"❌ Stok Kurang: {item_db.nama} sisa {item_db.stok}")
                 return jsonify({'message': f"Stok {item_db.nama} tidak cukup (Sisa: {item_db.stok})"}), 400
             
             subtotal = item_db.harga * item_info['jumlah']
             total_harga_order += subtotal
 
-        # 2. Generate VA Number (Format Bank)
-        # Biar terlihat real, kita pakai kode bank
+        # 2. Generate VA Number
         bank_codes = {'BCA': '8800', 'BRI': '1234', 'MANDIRI': '9000', 'BNI': '8810', 'CIMB': '1199'}
         prefix = bank_codes.get(bank_name, '8800')
         random_suffix = random.randint(1000000000, 9999999999)
@@ -58,20 +55,21 @@ def create_order():
             status='menunggu_pembayaran', 
             bank_name=bank_name,
             va_number=va_generated,
-            payment_method=payment_method, # <--- PENTING: Disimpan ke DB
+            payment_method=payment_method, 
             created_at=datetime.utcnow()
         )
         db.session.add(new_order)
-        db.session.flush() # Flush biar dapat ID Order
+        db.session.flush() 
 
         # 4. Buat Detail Order & KURANGI STOK
         for item_info in items_data:
             item_db = Item.query.get(item_info['item_id'])
             
-            # Kurangi Stok
+            # [LOG STOCK] Logika Logger disini sudah benar
+            stok_awal = item_db.stok
             item_db.stok -= item_info['jumlah']
+            current_app.logger.info(f"   📉 Stok '{item_db.nama}' Berkurang: {stok_awal} -> {item_db.stok}")
             
-            # Simpan Detail
             detail = OrderDetail(
                 order_id=new_order.id,
                 item_id=item_db.id,
@@ -80,15 +78,14 @@ def create_order():
             )
             db.session.add(detail)
 
-        # 5. Hapus Keranjang User (Hanya item yang dibeli)
-        # Jika mau hapus semua keranjang: Cart.query.filter_by(user_id=user_id).delete()
-        # Tapi kode di bawah ini lebih aman (opsional)
+        # 5. Hapus Keranjang User
         ids_to_remove = [item['item_id'] for item in items_data]
         Cart.query.filter(Cart.user_id == user_id, Cart.item_id.in_(ids_to_remove)).delete(synchronize_session=False)
 
         db.session.commit()
 
-        print(f">>> ORDER SUCCESS ID: {new_order.id}")
+        # [LOG FINAL] Print lama sudah dihapus, pakai logger saja
+        current_app.logger.info(f"✅ ORDER SUKSES! ID: {new_order.id} | Total: Rp {total_harga_order}")
 
         return jsonify({
             'message': 'Order berhasil dibuat',
@@ -101,7 +98,7 @@ def create_order():
 
     except Exception as e:
         db.session.rollback()
-        print(f"!!! ERROR: {str(e)}")
+        current_app.logger.error(f"🔥 ERROR CHECKOUT: {str(e)}")
         return jsonify({'message': 'Gagal membuat order', 'error': str(e)}), 500
 
 # 2. GET USER ORDERS (Riwayat)
@@ -123,7 +120,7 @@ def get_user_orders(user_id):
             'id': order.id,
             'total_harga': order.total_harga,
             'status': order.status,
-            'payment_method': getattr(order, 'payment_method', 'transfer'), # Handle kalau kolom belum ada di model
+            'payment_method': getattr(order, 'payment_method', 'transfer'), 
             'tgl_transaksi': order.created_at.strftime('%Y-%m-%d %H:%M'),
             'items': items,
             'bank_name': order.bank_name,
@@ -144,14 +141,16 @@ def pay_order(order_id):
         return jsonify({'message': 'Status order tidak valid untuk pembayaran'}), 400
 
     try:
-        # Ubah status jadi 'dikemas' atau 'menunggu_konfirmasi'
-        # Karena ini VA Virtual, biasanya dianggap lunas otomatis -> 'dikemas'
-        # Tapi kalau manual check, pakai 'menunggu_konfirmasi'
         order.status = 'menunggu_konfirmasi' 
         db.session.commit()
+        
+        # [LOG PAYMENT] Sudah benar
+        current_app.logger.info(f"💰 PEMBAYARAN DITERIMA: Order #{order_id} -> Status 'menunggu_konfirmasi'")
+        
         return jsonify({'message': 'Pembayaran berhasil dikonfirmasi'}), 200
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f"❌ Error Payment: {e}")
         return jsonify({'message': 'Error update status', 'error': str(e)}), 500
 
 # 4. CANCEL ORDER 
@@ -168,18 +167,22 @@ def cancel_order(order_id):
     reason = data.get('reason', 'Dibatalkan Pengguna')
 
     try:
+        current_app.logger.info(f"🚫 Membatalkan Order #{order_id}...")
         for detail in order.details:
             item = Item.query.get(detail.item_id)
             if item:
                 item.stok += detail.jumlah
+                current_app.logger.info(f"   📈 Stok '{item.nama}' Dikembalikan: +{detail.jumlah}")
         
         order.status = 'batal'
         order.cancel_reason = reason
         
         db.session.commit()
+        current_app.logger.info(f"✅ Order #{order_id} Berhasil Dibatalkan.")
         return jsonify({'message': 'Order dibatalkan & stok dikembalikan'}), 200
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f"❌ Error Cancel: {e}")
         return jsonify({'message': 'Gagal cancel', 'error': str(e)}), 500
 
 # 5. GET ORDER DETAIL
